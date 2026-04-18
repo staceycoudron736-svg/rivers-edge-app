@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="River's Edge">
+    <meta name="theme-color" content="#1a4d2e">
+    <title>River's Edge Tree & Lawn Care</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; padding: 10px 10px 100px 10px; }
+        .header { border-radius: 10px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .header img { width: 100%; height: auto; display: block; }
+        .sync-status { text-align: center; padding: 6px; font-size: 12px; font-weight: bold; }
+        .sync-status.online { background: #c8e6c9; color: #2e7d32; }
+        .sync-status.offline { background: #ffe0b2; color: #e65100; }
+        .nav-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .nav-btn { background: white; border: 2px solid #1a4d2e; padding: 15px 5px; font-size: 12px; font-weight: bold; color: #1a4d2e; border-radius: 8px; cursor: pointer; text-align: center; }
+        .nav-btn.active { background: #1a4d2e; color: white; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #1a4d2e; margin-bottom: 12px; font-size: 20px; }
+        h3 { color: #1a4d2e; margin: 15px 0 8px 0; font-size: 14px; border-bottom: 1px solid #1a4d2e; padding-bottom: 3px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #1a4d2e; }
+        input, textarea, select { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 6px; -webkit-appearance: none; background: white; }
+        input:focus, textarea:focus, select:focus { border-color: #1a4d2e; outline: none; }
+        textarea { min-height: 70px; resize: vertical; }
+        .btn { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+        .btn-primary { background: #1a4d2e; color: white; }
+        .btn-secondary { background: #666; color: white; }
+        .btn-success { background: #228b22; color: white; }
+        .btn-email { background: #0066cc; color: white; }
+        .btn-edit { background: #ff9800; color: white; }
+        .btn-danger { background: #c41e3a; color: white; }
+        .btn-half { width: 48%; display: inline-block; }
+        .package-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .package-card { border: 2px solid #ddd; padding: 12px 8px; border-radius: 8px; cursor: pointer; text-align: center; }
+        .package-card.selected { border-color: #1a4d2e; background: #e8f5e9; }
+        .package-card h4 { color: #1a4d2e; font-size: 14px; margin-bottom: 3px; }
+        .package-card p { color: #666; font-size: 11px; }
+        .job-list { list-style: none; }
+        .job-item { background: white; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #1a4d2e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .job-item.today { border-left-color: #ff9800; background: #fff8e1; }
+        .job-item.tomorrow { border-left-color: #2196f3; background: #e3f2fd; }
+        .job-item h3 { border: none; margin: 0 0 6px 0; font-size: 16px; }
+        .job-item p { margin: 4px 0; color: #555; font-size: 13px; }
+        .job-item a { color: #0066cc; }
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 4px; margin-bottom: 5px; color: white; }
+        .tag-today { background: #ff9800; }
+        .tag-tomorrow { background: #2196f3; }
+        .tag-recurring { background: #9c27b0; }
+        .tag-signed { background: #228b22; }
+        .tag-payment { background: #e91e63; }
+        .job-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .job-actions button { flex: 1; min-width: 70px; padding: 10px 5px; font-size: 11px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; color: white; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 16px; }
+        
+        /* Signature Canvas - FIXED */
+        .signature-container { 
+            border: 3px solid #1a4d2e; 
+            border-radius: 8px; 
+            background: #fffff0; 
+            margin: 10px 0; 
+            position: relative;
+            overflow: hidden;
+        }
+        #signatureCanvas {
+            width: 100%;
+            height: 200px;
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .sig-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        .sig-line {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            right: 20px;
+            border-bottom: 1px dashed #999;
+        }
+        .sig-x {
+            position: absolute;
+            bottom: 42px;
+            left: 25px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .contract-text { font-size: 11px; line-height: 1.4; color: #333; }
+        .contract-text p { margin: 8px 0; }
+        .contract-header { text-align: center; border-bottom: 2px solid #1a4d2e; padding-bottom: 10px; margin-bottom: 15px; }
+        .contract-header h2 { margin: 0; font-size: 18px; }
+        .contract-header p { margin: 3px 0; font-size: 12px; color: #666; }
+        
+        .payment-plan-box { background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; }
+        .inline-group { display: flex; gap: 10px; }
+        .inline-group .form-group { flex: 1; }
+        
+        .checkbox-row { display: flex; align-items: center; margin: 8px 0; }
+        .checkbox-row input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; }
+        .checkbox-row label { margin: 0; font-weight: normal; }
+        
+        .reminder-popup { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .reminder-popup.show { display: flex; }
+        .reminder-content { background: white; padding: 20px; border-radius: 12px; max-width: 350px; width: 100%; text-align: center; }
+        .reminder-content h2 { color: #ff9800; margin-bottom: 12px; font-size: 20px; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; max-width: 500px; width: 100%; margin: 20px auto; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            #printArea button, #printArea .btn, #postSaveButtons { display: none !important; visibility: hidden !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Reminder Popup -->
+        <div id="reminderPopup" class="reminder-popup">
+            <div class="reminder-content">
+                <h2>📅 Upcoming Jobs!</h2>
+                <div id="reminderText"></div>
+                <button class="btn btn-primary" onclick="closeReminder()">Got It!</button>
+            </div>
+        </div>
+
+        <!-- Edit Job Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <h2>✏️ Edit Job</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editJobId">
+                    <div class="form-group">
+                        <label>Customer Name</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="editPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="editEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>Street Address</label>
+                        <input type="text" id="editAddrStreet" required placeholder="123 Main St">
+                    </div>
+                    <div class="inline-group">
+                        <div class="form-group" style="flex:2;">
+                            <label>City</label>
+                            <input type="text" id="editAddrCity" placeholder="Davenport">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>State</label>
+                            <input type="text" id="editAddrState" placeholder="IA" maxlength="2">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Zip</label>
+                            <input type="text" id="editAddrZip" placeholder="52804" maxlength="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Job Date</label>
+                        <input type="date" id="editDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Price ($)</label>
+                        <input type="number" id="editPrice" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Work Notes</label>
+                        <textarea id="editNotes" placeholder="Add notes about completed work, ongoing issues, etc."></textarea>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="editRecurring">
+                        <label for="editRecurring">Recurring Job</label>
+                    </div>
+                    <div id="recurringOptions" style="display:none;">
+                        <div class="form-group">
+                            <label>Frequency</label>
+                            <select id="editFrequency">
+                                <option value="weekly">Weekly</option>
+                                <option value="biweekly">Every 2 Weeks</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="recurring">Recurring</option>
+                            </select>
+                        </div>
+                    </div>
+                    <h3 style="color:#1a4d2e;margin:15px 0 8px 0;font-size:14px;border-bottom:1px solid #1a4d2e;padding-bottom:3px;">💰 Payment</h3>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="editPaymentReceived" onchange="document.getElementById('editPaymentFields').style.display=this.checked?'block':'none'">
+                        <label for="editPaymentReceived">Payment Received</label>
+                    </div>
+                    <div id="editPaymentFields" style="display:none;">
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <select id="editPaymentMethod" onchange="document.getElementById('editCheckNumGroup').style.display=this.value==='check'?'block':'none'">
+                                <option value="cash">💵 Cash</option>
+                                <option value="check">🗒️ Check</option>
+                                <option value="credit">💳 Credit Card</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="editCheckNumGroup" style="display:none;">
+                            <label>Check Number</label>
+                            <input type="text" id="editCheckNumber" placeholder="e.g. 1042">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="header" style="background: linear-gradient(180deg, #0d2e18 0%, #1a4d2e 60%, #2d6e45 100%); padding: 18px 16px 14px 16px; display:flex; align-items:center; gap:14px;">
+            <svg width="72" height="80" viewBox="0 0 72 80" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+              <!-- Trunk -->
+              <rect x="31" y="58" width="10" height="20" rx="3" fill="#5c3a1e"/>
+              <rect x="33" y="60" width="3" height="18" rx="1" fill="#7a4f2a" opacity="0.5"/>
+              <!-- Main canopy layers - Bur Oak Iowa native -->
+              <ellipse cx="36" cy="48" rx="28" ry="14" fill="#1b5e20"/>
+              <ellipse cx="20" cy="40" rx="18" ry="13" fill="#2e7d32"/>
+              <ellipse cx="52" cy="38" rx="17" ry="13" fill="#2e7d32"/>
+              <ellipse cx="36" cy="30" rx="22" ry="15" fill="#388e3c"/>
+              <ellipse cx="16" cy="28" rx="14" ry="11" fill="#43a047"/>
+              <ellipse cx="56" cy="26" rx="13" ry="11" fill="#43a047"/>
+              <ellipse cx="36" cy="16" rx="18" ry="13" fill="#4caf50"/>
+              <ellipse cx="24" cy="14" rx="11" ry="9" fill="#66bb6a"/>
+              <ellipse cx="48" cy="13" rx="11" ry="9" fill="#66bb6a"/>
+              <ellipse cx="36" cy="6" rx="13" ry="9" fill="#81c784"/>
+              <!-- Light highlights -->
+              <ellipse cx="28" cy="10" rx="6" ry="4" fill="#a5d6a7" opacity="0.5"/>
+              <ellipse cx="44" cy="8" rx="5" ry="3" fill="#a5d6a7" opacity="0.4"/>
+            </svg>
+            <div style="flex:1;">
+                <div style="color:#fff; font-size:20px; font-weight:900; letter-spacing:0.5px; text-shadow:0 1px 3px rgba(0,0,0,0.5); line-height:1.2;">River's Edge</div>
+                <div style="color:#a5d6a7; font-size:13px; font-weight:700; letter-spacing:0.3px;">Tree &amp; Lawn Care</div>
+                <div style="color:#81c784; font-size:10px; margin-top:2px;">Serving the Quad Cities &amp; Surrounding Area</div>
+            </div>
+        </div>
+        
+        <div id="syncStatus" class="sync-status online">✓ Connected</div>
+        
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="showSection('jobs')">📋 JOBS</button>
+            <button class="nav-btn" onclick="showSection('new')">➕ NEW</button>
+            <button class="nav-btn" onclick="showSection('contract')">📝 CONTRACT</button>
+            <button class="nav-btn" onclick="showSection('settings')">⚙️ MORE</button>
+        </div>
+        
+        <!-- JOBS SECTION -->
+        <div id="jobs" class="section active">
+            <div class="card">
+                <h2>📋 Jobs</h2>
+                <ul class="job-list" id="jobList"><div class="empty-state">Loading...</div></ul>
+            </div>
+        </div>
+        
+        <!-- NEW JOB SECTION -->
+        <div id="new" class="section">
+            <div class="card">
+                <h2>➕ New Job</h2>
+                <form id="jobForm">
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" id="customerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="customerEmail" placeholder="For sending contracts">
+                    </div>
+                    <div class="form-group">
+                        <label>Street Address *</label>
+                        <input type="text" id="addrStreet" required placeholder="123 Main St">
+                    </div>
+                    <div class="inline-group">
+                        <div class="form-group" style="flex:2;">
+                            <label>City</label>
+                            <input type="text" id="addrCity" placeholder="Davenport">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>State</label>
+                            <input type="text" id="addrState" placeholder="IA" maxlength="2">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Zip</label>
+                            <input type="text" id="addrZip" placeholder="52804" maxlength="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Type *</label>
+                        <div class="package-selector">
+                            <div class="package-card" data-package="tree" onclick="selectPackage(this)">
+                                <h4>🌲 Tree Service</h4>
+                                <p>Removal, pruning &amp; care</p>
+                            </div>
+                            <div class="package-card" data-package="lawn" onclick="selectPackage(this)">
+                                <h4>🌱 Lawn Service</h4>
+                                <p>Aeration, grub &amp; pest</p>
+                            </div>
+                            <div class="package-card" data-package="combo" onclick="selectPackage(this)">
+                                <h4>🌲🌱 Full Service</h4>
+                                <p>Complete tree &amp; lawn</p>
+                            </div>
+                            <div class="package-card" data-package="seasonal" onclick="selectPackage(this)">
+                                <h4>📅 Recurring</h4>
+                                <p>Ongoing scheduled work</p>
+                            </div>
+                        </div>
+                        <input type="hidden" id="servicePackage">
+                    </div>
+                    <div class="form-group">
+                        <label>Work Description</label>
+                        <textarea id="specificServices" placeholder="Describe the work needed..."></textarea>
+                    </div>
+                    <div class="inline-group">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="jobDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Price ($)</label>
+                            <input type="number" id="price" step="0.01">
+                        </div>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="isRecurring" onchange="document.getElementById('newRecurringOptions').style.display=this.checked?'block':'none'">
+                        <label for="isRecurring">This is a recurring job</label>
+                    </div>
+                    <div id="newRecurringOptions" style="display:none;">
+                        <div class="form-group">
+                            <label>Frequency</label>
+                            <select id="newFrequency">
+                                <option value="weekly">Weekly</option>
+                                <option value="biweekly">Every 2 Weeks</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="recurring">Recurring</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">💾 SAVE JOB</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- CONTRACT SECTION -->
+        <div id="contract" class="section">
+            <div class="card">
+                <h2>📝 Create Contract</h2>
+                <div class="form-group">
+                    <label>Select Job</label>
+                    <select id="jobSelect" onchange="loadJobForContract()">
+                        <option value="">-- Choose a Job --</option>
+                    </select>
+                </div>
+                
+                <div id="contractFormArea" style="display:none;">
+                    <h3>💰 Pricing</h3>
+                    <div class="form-group">
+                        <label>Total Job Price ($)</label>
+                        <input type="number" id="totalPrice" step="0.01" required placeholder="0.00" oninput="calcPayment()">
+                    </div>
+
+                    <h3>💳 Payment Method</h3>
+                    <div class="form-group">
+                        <select id="contractPayMethod" onchange="toggleContractCheck()">
+                            <option value="">-- How is customer paying? --</option>
+                            <option value="cash">💵 Cash</option>
+                            <option value="check">🗒️ Check</option>
+                            <option value="credit">💳 Credit Card</option>
+                            <option value="plan">📋 Payment Plan</option>
+                        </select>
+                    </div>
+                    <div id="contractCheckNumWrap" style="display:none;" class="form-group">
+                        <label>Check Number</label>
+                        <input type="text" id="contractCheckNum" placeholder="e.g. 1042">
+                    </div>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="usePaymentPlan" onchange="togglePaymentPlan()">
+                        <label for="usePaymentPlan">Set Up Payment Plan</label>
+                    </div>
+
+                    <div id="paymentPlanArea" class="payment-plan-box" style="display:none;">
+                        <div class="inline-group">
+                            <div class="form-group">
+                                <label>Down Payment ($)</label>
+                                <input type="number" id="downPayment" step="0.01" placeholder="0.00" oninput="calcPayment()">
+                            </div>
+                            <div class="form-group">
+                                <label>Down Payment Due</label>
+                                <input type="date" id="downPaymentDue">
+                            </div>
+                        </div>
+                        <div class="inline-group">
+                            <div class="form-group">
+                                <label># of Payments</label>
+                                <input type="number" id="numPayments" min="1" max="24" value="3" oninput="calcPayment()">
+                            </div>
+                            <div class="form-group">
+                                <label>Monthly Amount ($)</label>
+                                <input type="number" id="monthlyPayment" step="0.01" placeholder="Auto-calculated">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Payments Due On (day of month)</label>
+                            <input type="number" id="paymentDay" min="1" max="28" value="1" placeholder="1-28">
+                        </div>
+
+                        <!-- LIVE MATH BREAKDOWN -->
+                        <div id="payBreakdown" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;line-height:1.9;">
+                            <strong style="color:#1a4d2e;">📊 Payment Breakdown</strong><br>
+                            <span id="bdTotal"></span><br>
+                            <span id="bdDown"></span><br>
+                            <span id="bdRemain"></span><br>
+                            <span id="bdMonthly"></span><br>
+                            <span id="bdFull"></span>
+                        </div>
+                    </div>
+
+                    <!-- FULL-PAY SUMMARY -->
+                    <div id="fullPaySummary" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px;margin-top:10px;font-size:13px;line-height:1.9;">
+                        <strong style="color:#1a4d2e;">💵 Payment Summary</strong><br>
+                        <span id="fpMethod"></span><br>
+                        <span id="fpTotal"></span>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="generateContract()" style="margin-top:14px;">📄 Generate Contract</button>
+                </div>
+                
+                <div id="contractPreview"></div>
+            </div>
+        </div>
+        
+        <!-- SETTINGS SECTION -->
+        <div id="settings" class="section">
+            <div class="card">
+                <h2>💰 Revenue Summary</h2>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+                    <div style="background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:22px;font-weight:900;color:#1a4d2e;" id="revTotal">$0</div>
+                        <div style="font-size:11px;color:#666;font-weight:700;margin-top:3px;">TOTAL INVOICED</div>
+                    </div>
+                    <div style="background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:22px;font-weight:900;color:#228b22;" id="revPaid">$0</div>
+                        <div style="font-size:11px;color:#666;font-weight:700;margin-top:3px;">COLLECTED</div>
+                    </div>
+                    <div style="background:#fff3e0;border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:22px;font-weight:900;color:#e65100;" id="revOwed">$0</div>
+                        <div style="font-size:11px;color:#666;font-weight:700;margin-top:3px;">OUTSTANDING</div>
+                    </div>
+                    <div style="background:#f3e5f5;border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:22px;font-weight:900;color:#6a1b9a;" id="revJobs">0</div>
+                        <div style="font-size:11px;color:#666;font-weight:700;margin-top:3px;">JOBS WITH PRICE</div>
+                    </div>
+                </div>
+                <p style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;">Based on jobs that have a price entered</p>
+            </div>
+            <div class="card">
+                <h2>⚙️ Settings & Info</h2>
+                <p style="color:#666;margin-bottom:15px;">River's Edge Tree &amp; Lawn Care<br>Serving the Quad Cities &amp; Surrounding Area</p>
+                <button class="btn btn-secondary" onclick="exportData()">📤 Export All Data</button>
+                <button class="btn btn-secondary" onclick="showReminders()">🔔 Show Reminders</button>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #ddd;">
+                    <h3 style="color:#1a4d2e;margin-bottom:8px;font-size:14px;">📋 Certificate of Insurance</h3>
+                    <p style="font-size:12px;color:#666;margin-bottom:8px;">Save your COI link (from your insurance company's portal or Google Drive) so you can pull it up instantly for customers.</p>
+                    <button class="btn btn-primary" onclick="viewCOI()" id="coiViewBtn" style="display:none;">📄 View COI</button>
+                    <button class="btn btn-secondary" onclick="saveCOILink()">🔗 Set COI Link</button>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #ddd;">
+                    <p style="font-size:12px;color:#999;">Data syncs automatically between devices when online. Works offline too!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDiGYtHMqnE2hKcfrAIrjTaYBvCTQSuljg",
+            authDomain: "river-s-edge-tree--field-app.firebaseapp.com",
+            projectId: "river-s-edge-tree--field-app",
+            storageBucket: "river-s-edge-tree--field-app.firebasestorage.app",
+            messagingSenderId: "122169788726",
+            appId: "1:122169788726:web:0506fc95bcadfeed7f8b97"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        db.enablePersistence().catch(e => console.log('Persistence:', e));
+
+        // State
+        let jobs = [];
+        let currentJob = null;
+        let signatureCanvas, signatureCtx;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+
+        // Init
+        document.getElementById('jobDate').valueAsDate = new Date();
+        
+        // Online/Offline status
+        function updateStatus() {
+            const el = document.getElementById('syncStatus');
+            if(navigator.onLine) {
+                el.className = 'sync-status online';
+                el.textContent = '✓ Connected';
+            } else {
+                el.className = 'sync-status offline';
+                el.textContent = '📴 Offline - will sync later';
+            }
+        }
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        updateStatus();
+
+        // Firebase listener
+        db.collection('jobs').orderBy('created', 'desc').onSnapshot(snap => {
+            jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderJobs();
+            updateJobSelect();
+            updateRevenue();
+        }, err => {
+            console.error('DB Error:', err);
+            updateStatus();
+        });
+
+        // Navigation
+        function showSection(s) {
+            document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
+            document.getElementById(s).classList.add('active');
+            document.querySelectorAll('.nav-btn')[['jobs','new','contract','settings'].indexOf(s)].classList.add('active');
+            
+            if(s === 'new') {
+                document.getElementById('jobForm').reset();
+                document.getElementById('jobDate').valueAsDate = new Date();
+                document.querySelectorAll('.package-card').forEach(x => x.classList.remove('selected'));
+                document.getElementById('newRecurringOptions').style.display = 'none';
+                document.getElementById('servicePackage').value = '';
+            }
+        }
+
+        // Package selection
+        function selectPackage(el) {
+            document.querySelectorAll('.package-card').forEach(x => x.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('servicePackage').value = el.dataset.package;
+        }
+
+        // Save new job
+        document.getElementById('jobForm').onsubmit = async function(e) {
+            e.preventDefault();
+            if(!document.getElementById('servicePackage').value) {
+                alert('Please select a service type');
+                return;
+            }
+            
+            try {
+                const street = document.getElementById('addrStreet').value;
+                const city = document.getElementById('addrCity').value;
+                const state = document.getElementById('addrState').value;
+                const zip = document.getElementById('addrZip').value;
+                const fullAddr = [street, city, state ? state.toUpperCase() : '', zip].filter(Boolean).join(', ');
+                await db.collection('jobs').add({
+                    customerName: document.getElementById('customerName').value,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('customerEmail').value || '',
+                    addrStreet: street,
+                    addrCity: city,
+                    addrState: state.toUpperCase(),
+                    addrZip: zip,
+                    address: fullAddr,
+                    servicePackage: document.getElementById('servicePackage').value,
+                    specificServices: document.getElementById('specificServices').value || '',
+                    jobDate: document.getElementById('jobDate').value || '',
+                    price: document.getElementById('price').value || '',
+                    isRecurring: document.getElementById('isRecurring').checked,
+                    frequency: document.getElementById('isRecurring').checked ? document.getElementById('newFrequency').value : '',
+                    hasContract: false,
+                    notes: '',
+                    created: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert('✅ Job saved!');
+                showSection('jobs');
+            } catch(err) {
+                console.error(err);
+                alert('Saved locally - will sync when online');
+                showSection('jobs');
+            }
+        };
+
+        // Render jobs
+        function renderJobs() {
+            const list = document.getElementById('jobList');
+            if(!jobs.length) {
+                list.innerHTML = '<div class="empty-state">No jobs yet.<br>Tap ➕ NEW to add one!</div>';
+                return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            
+            list.innerHTML = jobs.map(j => {
+                let cls = '';
+                let tags = '';
+                
+                if(j.jobDate === today) { cls = ' today'; tags += '<span class="tag tag-today">TODAY</span>'; }
+                else if(j.jobDate === tomorrow) { cls = ' tomorrow'; tags += '<span class="tag tag-tomorrow">TOMORROW</span>'; }
+                if(j.isRecurring) tags += '<span class="tag tag-recurring">RECURRING</span>';
+                if(j.hasContract) tags += '<span class="tag tag-signed">SIGNED</span>';
+                if(j.paymentPlan) tags += '<span class="tag tag-payment">PAYMENT PLAN</span>';
+                if(j.paymentReceived) {
+                    const methodLabel = {cash:'CASH',check:'CHECK',credit:'CARD'}[j.paymentMethod] || 'PAID';
+                    tags += `<span class="tag" style="background:#00897b;">✅ ${methodLabel}${j.checkNumber ? ' #'+j.checkNumber : ''}</span>`;
+                }
+                
+                return `
+                <li class="job-item${cls}">
+                    ${tags}
+                    <h3>${esc(j.customerName)}</h3>
+                    <p>📞 <a href="tel:${j.phone}">${esc(j.phone)}</a></p>
+                    <p>📍 ${esc(j.address)}</p>
+                    <p>📦 ${pkgName(j.servicePackage)}</p>
+                    ${j.specificServices ? `<p>🔧 ${esc(j.specificServices)}</p>` : ''}
+                    ${j.jobDate ? `<p>📅 ${j.jobDate}</p>` : ''}
+                    ${j.price ? `<p>💰 $${j.price}</p>` : ''}
+                    ${j.notes ? `<p>📝 ${esc(j.notes)}</p>` : ''}
+                    <div class="job-actions">
+                        <button onclick="callJob('${j.phone}')" style="background:#228b22">📞 Call</button>
+                        <button onclick="editJob('${j.id}')" style="background:#ff9800">✏️ Edit</button>
+                        <button onclick="deleteJob('${j.id}')" style="background:#c41e3a">🗑️</button>
+                    </div>
+                </li>`;
+            }).join('');
+        }
+
+        function esc(t) {
+            if(!t) return '';
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        function ordinal(n) {
+            const s = ['th','st','nd','rd'];
+            const v = n % 100;
+            return (s[(v-20)%10] || s[v] || s[0]);
+        }
+        
+        function pkgName(p) {
+            return {tree:'🌲 Tree Service', lawn:'🌱 Lawn Service', combo:'🌲🌱 Full Service', seasonal:'📅 Recurring'}[p] || p;
+        }
+
+        function callJob(phone) { window.location.href = 'tel:' + phone; }
+
+        async function deleteJob(id) {
+            if(confirm('Delete this job?')) {
+                await db.collection('jobs').doc(id).delete();
+            }
+        }
+
+        // Edit job
+        function editJob(id) {
+            const j = jobs.find(x => x.id === id);
+            if(!j) return;
+
+            document.getElementById('editJobId').value = id;
+            document.getElementById('editName').value = j.customerName || '';
+            document.getElementById('editPhone').value = j.phone || '';
+            document.getElementById('editEmail').value = j.email || '';
+
+            // Address — use split fields if available, else put full address in street
+            document.getElementById('editAddrStreet').value = j.addrStreet || j.address || '';
+            document.getElementById('editAddrCity').value = j.addrCity || '';
+            document.getElementById('editAddrState').value = j.addrState || '';
+            document.getElementById('editAddrZip').value = j.addrZip || '';
+
+            document.getElementById('editDate').value = j.jobDate || '';
+            document.getElementById('editPrice').value = j.price || '';
+            document.getElementById('editNotes').value = j.notes || '';
+            document.getElementById('editRecurring').checked = j.isRecurring || false;
+            document.getElementById('editFrequency').value = j.frequency || 'monthly';
+            document.getElementById('recurringOptions').style.display = j.isRecurring ? 'block' : 'none';
+
+            // Payment fields
+            const paid = j.paymentReceived || false;
+            document.getElementById('editPaymentReceived').checked = paid;
+            document.getElementById('editPaymentFields').style.display = paid ? 'block' : 'none';
+            document.getElementById('editPaymentMethod').value = j.paymentMethod || 'cash';
+            const isCheck = (j.paymentMethod === 'check');
+            document.getElementById('editCheckNumGroup').style.display = isCheck ? 'block' : 'none';
+            document.getElementById('editCheckNumber').value = j.checkNumber || '';
+
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        document.getElementById('editRecurring').onchange = function() {
+            document.getElementById('recurringOptions').style.display = this.checked ? 'block' : 'none';
+        };
+
+        document.getElementById('editForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editJobId').value;
+            
+            const eStreet = document.getElementById('editAddrStreet').value;
+            const eCity   = document.getElementById('editAddrCity').value;
+            const eState  = document.getElementById('editAddrState').value.toUpperCase();
+            const eZip    = document.getElementById('editAddrZip').value;
+            const eAddr   = [eStreet, eCity, eState, eZip].filter(Boolean).join(', ');
+            const ePaid   = document.getElementById('editPaymentReceived').checked;
+            const eMethod = document.getElementById('editPaymentMethod').value;
+            const eCheck  = document.getElementById('editCheckNumber').value;
+
+            await db.collection('jobs').doc(id).update({
+                customerName: document.getElementById('editName').value,
+                phone: document.getElementById('editPhone').value,
+                email: document.getElementById('editEmail').value,
+                addrStreet: eStreet,
+                addrCity: eCity,
+                addrState: eState,
+                addrZip: eZip,
+                address: eAddr,
+                jobDate: document.getElementById('editDate').value,
+                price: document.getElementById('editPrice').value,
+                notes: document.getElementById('editNotes').value,
+                isRecurring: document.getElementById('editRecurring').checked,
+                frequency: document.getElementById('editFrequency').value,
+                paymentReceived: ePaid,
+                paymentMethod: ePaid ? eMethod : '',
+                checkNumber: (ePaid && eMethod === 'check') ? eCheck : ''
+            });
+            
+            closeEditModal();
+            alert('✅ Updated!');
+        };
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        // Contract
+        function updateJobSelect() {
+            const sel = document.getElementById('jobSelect');
+            sel.innerHTML = '<option value="">-- Choose a Job --</option>' + 
+                jobs.map(j => `<option value="${j.id}">${esc(j.customerName)} - ${pkgName(j.servicePackage)}${j.hasContract ? ' ✅' : ''}</option>`).join('');
+        }
+
+        function loadJobForContract() {
+            const id = document.getElementById('jobSelect').value;
+            if(!id) {
+                document.getElementById('contractFormArea').style.display = 'none';
+                document.getElementById('contractPreview').innerHTML = '';
+                return;
+            }
+            currentJob = jobs.find(x => x.id === id);
+            document.getElementById('contractFormArea').style.display = 'block';
+            document.getElementById('totalPrice').value = currentJob.price || '';
+            document.getElementById('contractPreview').innerHTML = '';
+        }
+
+        function togglePaymentPlan() {
+            document.getElementById('paymentPlanArea').style.display =
+                document.getElementById('usePaymentPlan').checked ? 'block' : 'none';
+            calcPayment();
+        }
+
+        function generateContract() {
+            const total = document.getElementById('totalPrice').value;
+            if(!total) { alert('Enter total price'); return; }
+            const payMethodEl = document.getElementById('contractPayMethod');
+            const payMethodLabel = payMethodEl.options[payMethodEl.selectedIndex]?.text || '';
+            const payMethodVal = payMethodEl.value;
+            const contractCheckNum = document.getElementById('contractCheckNum').value;
+            
+            const usePlan = document.getElementById('usePaymentPlan').checked;
+            const downPay = document.getElementById('downPayment').value;
+            const downDue = document.getElementById('downPaymentDue').value;
+            const numPay = document.getElementById('numPayments').value;
+            const monthlyAmt = document.getElementById('monthlyPayment').value;
+            const payDay = document.getElementById('paymentDay').value;
+            
+            // Use work description from job page; fall back to service-type default if blank
+            const svcDefaults = {
+                tree: 'Tree removal, pruning, stump grinding, emergency services, disease treatment',
+                lawn: 'Core aeration, mole control, grub & pest treatment',
+                combo: 'Complete tree & lawn services (full service package)',
+                seasonal: 'Ongoing recurring tree and lawn maintenance'
+            };
+            const workDesc = currentJob.specificServices
+                ? esc(currentJob.specificServices)
+                : (svcDefaults[currentJob.servicePackage] || '');
+
+            document.getElementById('contractPreview').innerHTML = `
+                <div id="printArea" class="contract-text" style="background:white;padding:15px;border:1px solid #ccc;border-radius:8px;margin-top:15px;">
+                    <div class="contract-header">
+                        <h2>SERVICE AGREEMENT & PAYMENT PLAN</h2>
+                        <p><strong>River's Edge Tree &amp; Lawn Care</strong></p>
+                        <p>Serving the Quad Cities &amp; Surrounding Area | State of Iowa</p>
+                        <p>Date: ${new Date().toLocaleDateString()}</p>
+                    </div>
+
+                    <h3>Customer Information</h3>
+                    <p><strong>Name:</strong> ${esc(currentJob.customerName)}<br>
+                    <strong>Phone:</strong> ${esc(currentJob.phone)}<br>
+                    ${currentJob.email ? `<strong>Email:</strong> ${esc(currentJob.email)}<br>` : ''}
+                    <strong>Address:</strong> ${esc(currentJob.address)}</p>
+
+                    <h3>Services</h3>
+                    <p><strong>Service Type:</strong> ${pkgName(currentJob.servicePackage)}<br>
+                    <strong>Work Description:</strong> ${workDesc}</p>
+                    ${currentJob.jobDate ? `<p><strong>Scheduled Date:</strong> ${currentJob.jobDate}</p>` : ''}
+
+                    <h3>Pricing & Payment</h3>
+                    <p><strong>Total Price:</strong> $${total}</p>
+                    ${payMethodVal ? `<p><strong>Payment Method:</strong> ${payMethodLabel}${contractCheckNum ? ' — Check #' + contractCheckNum : ''}</p>` : ''}
+                    ${usePlan ? `
+                    <div style="background:#f0f8f0;padding:12px;border-radius:6px;margin:10px 0;border:1px solid #c8e6c9;">
+                        <p><strong>📋 PAYMENT PLAN:</strong></p>
+                        <p>Down Payment: <strong>$${downPay || '0'}</strong> ${downDue ? `(Due: ${downDue})` : ''}<br>
+                        Remaining Balance: <strong>$${(parseFloat(total||0) - parseFloat(downPay||0)).toFixed(2)}</strong><br>
+                        ${numPay} Monthly Payments of <strong>$${monthlyAmt}</strong><br>
+                        Due on the ${payDay || '1'}${ordinal(parseInt(payDay)||1)} of each month<br>
+                        <strong>Total Collected: $${(parseFloat(downPay||0) + parseFloat(monthlyAmt||0) * parseInt(numPay||1)).toFixed(2)}</strong></p>
+                    </div>
+                    ` : '<p>Payment due upon completion of work.</p>'}
+                    <p><strong>Accepted:</strong> Cash, Check, Credit Card<br>
+                    <strong>Returned Check Fee:</strong> $30.00</p>
+
+                    <h3>Terms & Conditions</h3>
+                    <p style="font-size:10px;">
+                    1. All work performed professionally per industry standards.<br>
+                    2. Customer is responsible for providing access to all work areas.<br>
+                    3. Weather may lead to delays in scheduled work.<br>
+                    4. Contractor is fully insured.<br>
+                    5. 24-hour cancellation notice required ($50 fee otherwise).<br>
+                    6. Returned checks subject to $30 fee.<br>
+                    7. Payment plan: Late payments may incur fees and service suspension.<br>
+                    8. Disputes resolved through mediation in Scott County, Iowa.<br>
+                    9. Governed by Iowa state law.<br>
+                    10. We do NOT provide lawn mowing or hedge trimming.
+                    </p>
+
+                    <h3>Customer Signature</h3>
+                    <p style="font-size:11px;color:#666;">Sign below to accept this agreement:</p>
+                    <div class="signature-container">
+                        <canvas id="signatureCanvas"></canvas>
+                        <div class="sig-line"></div>
+                        <div class="sig-x">✗</div>
+                        <div class="sig-placeholder" id="sigPlaceholder">Sign Here</div>
+                    </div>
+
+                    <div style="display:flex;gap:10px;margin:10px 0;">
+                        <button class="btn btn-secondary" style="flex:1;" onclick="clearSignature()">🔄 Clear</button>
+                        <button class="btn btn-success" style="flex:1;" onclick="saveContract()">✅ Save Contract</button>
+                    </div>
+
+                    <div id="postSaveButtons" style="display:none;">
+                        <button class="btn btn-email" onclick="emailContract()">📧 Email to Customer</button>
+                        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+                    </div>
+
+                    <p style="margin-top:20px;padding-top:10px;border-top:1px solid #ddd;">
+                        <strong>Contractor:</strong> Colby Josvanger &nbsp;&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString()}
+                    </p>
+                </div>
+            `;
+            
+            // Initialize signature canvas
+            setTimeout(initSignature, 100);
+        }
+
+        // SIGNATURE PAD - COMPLETE REWRITE
+        function initSignature() {
+            signatureCanvas = document.getElementById('signatureCanvas');
+            if(!signatureCanvas) return;
+            
+            const container = signatureCanvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            
+            // Set canvas size to match container
+            signatureCanvas.width = rect.width;
+            signatureCanvas.height = 200;
+            
+            signatureCtx = signatureCanvas.getContext('2d');
+            signatureCtx.strokeStyle = '#000';
+            signatureCtx.lineWidth = 2;
+            signatureCtx.lineCap = 'round';
+            signatureCtx.lineJoin = 'round';
+            
+            // Mouse events
+            signatureCanvas.addEventListener('mousedown', startDraw);
+            signatureCanvas.addEventListener('mousemove', draw);
+            signatureCanvas.addEventListener('mouseup', stopDraw);
+            signatureCanvas.addEventListener('mouseout', stopDraw);
+            
+            // Touch events
+            signatureCanvas.addEventListener('touchstart', handleTouch, {passive: false});
+            signatureCanvas.addEventListener('touchmove', handleTouch, {passive: false});
+            signatureCanvas.addEventListener('touchend', stopDraw);
+            
+            console.log('Signature canvas initialized:', signatureCanvas.width, 'x', signatureCanvas.height);
+        }
+
+        function getPos(e) {
+            const rect = signatureCanvas.getBoundingClientRect();
+            const scaleX = signatureCanvas.width / rect.width;
+            const scaleY = signatureCanvas.height / rect.height;
+            
+            if(e.touches) {
+                return {
+                    x: (e.touches[0].clientX - rect.left) * scaleX,
+                    y: (e.touches[0].clientY - rect.top) * scaleY
+                };
+            }
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            isDrawing = true;
+            const pos = getPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            
+            // Hide placeholder
+            const ph = document.getElementById('sigPlaceholder');
+            if(ph) ph.style.display = 'none';
+        }
+
+        function draw(e) {
+            if(!isDrawing) return;
+            e.preventDefault();
+            
+            const pos = getPos(e);
+            
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(lastX, lastY);
+            signatureCtx.lineTo(pos.x, pos.y);
+            signatureCtx.stroke();
+            
+            lastX = pos.x;
+            lastY = pos.y;
+        }
+
+        function stopDraw(e) {
+            isDrawing = false;
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            if(e.type === 'touchstart') {
+                startDraw(e);
+            } else if(e.type === 'touchmove') {
+                draw(e);
+            }
+        }
+
+        function clearSignature() {
+            if(signatureCtx && signatureCanvas) {
+                signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                const ph = document.getElementById('sigPlaceholder');
+                if(ph) ph.style.display = 'block';
+            }
+        }
+
+        function isSignatureEmpty() {
+            if(!signatureCanvas) return true;
+            const data = signatureCtx.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height).data;
+            for(let i = 3; i < data.length; i += 4) {
+                if(data[i] > 0) return false;
+            }
+            return true;
+        }
+
+        async function saveContract() {
+            if(isSignatureEmpty()) {
+                alert('Please sign the contract first!');
+                return;
+            }
+            
+            const sigData = signatureCanvas.toDataURL();
+            const usePlan = document.getElementById('usePaymentPlan').checked;
+            
+            try {
+                const cPayMethod = document.getElementById('contractPayMethod').value;
+                const cCheckNum  = document.getElementById('contractCheckNum').value;
+                await db.collection('jobs').doc(currentJob.id).update({
+                    hasContract: true,
+                    contractDate: new Date().toISOString(),
+                    finalPrice: document.getElementById('totalPrice').value,
+                    signature: sigData,
+                    paymentPlan: usePlan,
+                    downPayment: usePlan ? document.getElementById('downPayment').value : null,
+                    monthlyPayment: usePlan ? document.getElementById('monthlyPayment').value : null,
+                    numPayments: usePlan ? document.getElementById('numPayments').value : null,
+                    contractPayMethod: cPayMethod,
+                    contractCheckNum: cPayMethod === 'check' ? cCheckNum : ''
+                });
+                
+                alert('✅ Contract saved!');
+                document.getElementById('postSaveButtons').style.display = 'block';
+            } catch(err) {
+                console.error(err);
+                alert('Error saving. Try again.');
+            }
+        }
+
+        function emailContract() {
+            if(!currentJob.email) {
+                alert('No email address for this customer. Add one in Edit Job.');
+                return;
+            }
+            
+            const total = document.getElementById('totalPrice').value;
+            const usePlan = document.getElementById('usePaymentPlan').checked;
+            
+            let paymentInfo = 'Payment due upon completion.';
+            if(usePlan) {
+                const down = document.getElementById('downPayment').value;
+                const monthly = document.getElementById('monthlyPayment').value;
+                const num = document.getElementById('numPayments').value;
+                paymentInfo = `Payment Plan:\n- Down Payment: $${down}\n- ${num} Monthly Payments of $${monthly}`;
+            }
+            
+            const subject = encodeURIComponent("River's Edge - Your Service Agreement");
+            const body = encodeURIComponent(
+`Dear ${currentJob.customerName},
+
+Thank you for choosing River's Edge Tree & Lawn Care!
+
+SERVICE AGREEMENT SUMMARY
+========================
+Service: ${pkgName(currentJob.servicePackage)}
+${currentJob.specificServices ? 'Work: ' + currentJob.specificServices + '\n' : ''}${currentJob.jobDate ? 'Date: ' + currentJob.jobDate + '\n' : ''}
+Total Price: $${total}
+
+${paymentInfo}
+
+Payment Methods: Cash, Check, Credit Card
+Returned Check Fee: $30.00
+
+Your contract was signed on ${new Date().toLocaleDateString()}.
+
+TERMS REMINDER:
+- 24-hour cancellation notice required
+- Weather may lead to delays in scheduled work
+- We do NOT provide lawn mowing or hedge trimming
+
+Thank you for your business!
+
+River's Edge Tree & Lawn Care
+Serving the Quad Cities & Surrounding Area
+Iowa
+`);
+            
+            window.open(`mailto:${currentJob.email}?subject=${subject}&body=${body}`, '_blank');
+        }
+
+        // Reminders
+        function checkReminders() {
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            
+            const todayJobs = jobs.filter(j => j.jobDate === today);
+            const tomorrowJobs = jobs.filter(j => j.jobDate === tomorrow);
+            const recurringJobs = jobs.filter(j => j.isRecurring && !j.jobDate);
+            
+            if(todayJobs.length || tomorrowJobs.length) {
+                let html = '';
+                if(todayJobs.length) {
+                    html += '<p><strong style="color:#ff9800;">⚠️ TODAY:</strong></p>';
+                    todayJobs.forEach(j => html += `<p>• ${esc(j.customerName)}</p>`);
+                }
+                if(tomorrowJobs.length) {
+                    html += '<p style="margin-top:10px;"><strong style="color:#2196f3;">📅 TOMORROW:</strong></p>';
+                    tomorrowJobs.forEach(j => html += `<p>• ${esc(j.customerName)}</p>`);
+                }
+                document.getElementById('reminderText').innerHTML = html;
+                document.getElementById('reminderPopup').classList.add('show');
+            }
+        }
+
+        function closeReminder() {
+            document.getElementById('reminderPopup').classList.remove('show');
+        }
+
+        function showReminders() {
+            checkReminders();
+            if(!document.getElementById('reminderPopup').classList.contains('show')) {
+                document.getElementById('reminderText').innerHTML = '<p>No upcoming jobs scheduled.</p>';
+                document.getElementById('reminderPopup').classList.add('show');
+            }
+        }
+
+        function exportData() {
+            if(!jobs.length) { alert('No jobs to export yet.'); return; }
+            try {
+                const data = JSON.stringify(jobs, null, 2);
+                const blob = new Blob([data], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'rivers-edge-jobs-' + new Date().toISOString().split('T')[0] + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                alert('✅ Export started! Check your Downloads folder.');
+            } catch(err) {
+                console.error('Export error:', err);
+                alert('Export failed. Try again.');
+            }
+        }
+
+        // ── PAYMENT MATH ──────────────────────────────────
+        function calcPayment() {
+            const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+            const down  = parseFloat(document.getElementById('downPayment').value) || 0;
+            const num   = parseInt(document.getElementById('numPayments').value) || 1;
+            const bd    = document.getElementById('payBreakdown');
+            const fps   = document.getElementById('fullPaySummary');
+
+            if (!document.getElementById('usePaymentPlan').checked) {
+                // Full pay summary
+                fps.style.display = total > 0 ? 'block' : 'none';
+                const method = document.getElementById('contractPayMethod');
+                const mLabel = method.options[method.selectedIndex]?.text || '—';
+                document.getElementById('fpMethod').textContent = '💳 Method: ' + (mLabel !== '-- How is customer paying? --' ? mLabel : 'Not selected');
+                document.getElementById('fpTotal').innerHTML = '<strong>Total Due: $' + total.toFixed(2) + '</strong>';
+                return;
+            }
+            fps.style.display = 'none';
+            if (total <= 0) { bd.style.display = 'none'; return; }
+
+            const remaining = Math.max(0, total - down);
+            const monthly   = num > 0 ? remaining / num : 0;
+            const grandTotal = down + (monthly * num);
+
+            // Auto-fill monthly field
+            document.getElementById('monthlyPayment').value = monthly.toFixed(2);
+
+            bd.style.display = 'block';
+            document.getElementById('bdTotal').innerHTML   = '💰 <strong>Total Price:</strong> $' + total.toFixed(2);
+            document.getElementById('bdDown').innerHTML    = '⬇️ <strong>Down Payment:</strong> $' + down.toFixed(2);
+            document.getElementById('bdRemain').innerHTML  = '📋 <strong>Remaining Balance:</strong> $' + remaining.toFixed(2);
+            document.getElementById('bdMonthly').innerHTML = '📅 <strong>' + num + ' Payment' + (num>1?'s':'') + ' of:</strong> $' + monthly.toFixed(2) + '/mo';
+            document.getElementById('bdFull').innerHTML    = '✅ <strong>Total Collected:</strong> $' + grandTotal.toFixed(2) +
+                (Math.abs(grandTotal - total) > 0.01 ? ' ⚠️ <span style="color:#c41e3a;">(off by $' + Math.abs(grandTotal-total).toFixed(2) + ')</span>' : ' ✓');
+        }
+
+        function toggleContractCheck() {
+            const method = document.getElementById('contractPayMethod').value;
+            document.getElementById('contractCheckNumWrap').style.display = method === 'check' ? 'block' : 'none';
+            // Auto-check payment plan if they selected Plan
+            if (method === 'plan') {
+                document.getElementById('usePaymentPlan').checked = true;
+                document.getElementById('paymentPlanArea').style.display = 'block';
+            }
+            calcPayment();
+        }
+
+        // ── REVENUE SUMMARY ───────────────────────────────
+        function updateRevenue() {
+            const priced = jobs.filter(j => j.price && parseFloat(j.price) > 0);
+            const totalInv  = priced.reduce((s,j) => s + parseFloat(j.price||0), 0);
+            const collected = priced.filter(j => j.paymentReceived).reduce((s,j) => s + parseFloat(j.price||0), 0);
+            const owed      = totalInv - collected;
+            document.getElementById('revTotal').textContent = '$' + totalInv.toFixed(2);
+            document.getElementById('revPaid').textContent  = '$' + collected.toFixed(2);
+            document.getElementById('revOwed').textContent  = '$' + owed.toFixed(2);
+            document.getElementById('revJobs').textContent  = priced.length;
+        }
+
+        // COI link functions
+        function viewCOI() {
+            const url = localStorage.getItem('coiLink');
+            if(url) window.open(url, '_blank');
+            else alert('No COI link saved yet. Tap "Set COI Link" to add one.');
+        }
+        function saveCOILink() {
+            const current = localStorage.getItem('coiLink') || '';
+            const url = prompt('Paste your COI link here (from your insurance portal or Google Drive):', current);
+            if(url && url.trim()) {
+                localStorage.setItem('coiLink', url.trim());
+                document.getElementById('coiViewBtn').style.display = 'block';
+                alert('✅ COI link saved!');
+            }
+        }
+        function initCOI() {
+            if(localStorage.getItem('coiLink')) {
+                document.getElementById('coiViewBtn').style.display = 'block';
+            }
+        }
+
+        // Service worker
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(e => console.log('SW:', e));
+        }
+
+        // Reminders: fire on load, every 30 min, and whenever app comes back into view
+        setTimeout(checkReminders, 1000);
+        setInterval(checkReminders, 30 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => {
+            if(document.visibilityState === 'visible') checkReminders();
+        });
+
+        initCOI();
+    </script>
+</body>
+</html>
